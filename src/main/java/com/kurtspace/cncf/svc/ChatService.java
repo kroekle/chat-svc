@@ -73,14 +73,12 @@ public class ChatService extends ChatServiceImplBase {
 				@Override
 				public void onMessage(Person person, String message) {
 					
-//					if (!person.equals(request.getPerson())) {
-						responseObserver.onNext(
-							ChatResults.newBuilder()
-								.setText(Message.newBuilder()
-										.setSender(person)
-										.setText(message))
-								.build());
-//					}
+					responseObserver.onNext(
+						ChatResults.newBuilder()
+							.setText(Message.newBuilder()
+									.setSender(person)
+									.setText(message))
+							.build());
 				}
 			});
 			store.registerPerson(request.getPerson());

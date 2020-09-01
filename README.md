@@ -66,6 +66,27 @@ I've tried 127.0.0.1 and that didn't work like I would have expected, I suspect 
 
 By the way, if you changed the port in the java service, this is one of the places you will need to change the port as well.
 
+### Building/Running the Proxy
+The following dockerfile is all you need to build the envoy proxy:
+
+```
+FROM envoyproxy/envoy:latest
+
+COPY envoy.yaml /etc/envoy/envoy.yaml
+
+CMD /usr/local/bin/envoy -c /etc/envoy/envoy.yaml -l trace --log-path /tmp/envoy_info.log
+```
+
+```
+docker build . -t chat-proxy
+```
+
+Then you can run it with this docker command:
+
+```
+docker run -p 9095:9095 -d --name=my-chat-proxy chat-proxy
+```
+
 ### Testing the Proxy
 The proxy can be tested in the same way the java service was tested using a gRPC client.  Only in this case, you would use the port 9095.
 
