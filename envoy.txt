@@ -1,0 +1,3 @@
+docker build . -t chat-proxy
+docker rm -fv my-chat-proxy
+docker run -p 9095:9095 -d --name=my-chat-proxy chat-proxy

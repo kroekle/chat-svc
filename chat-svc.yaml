@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: chat-svc
+  name: chat-svc
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-svc
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: chat-svc
+    spec:
+      containers:
+      - image: gcr.io/cloud-native-madison/chat-svc:0.1.2
+        imagePullPolicy: IfNotPresent
+        name: chat-svc
+        ports:
+        - containerPort: 9000
+          name: grpc
+          protocol: TCP
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-svc
+  labels:
+    app: chat-svc
+spec:
+  ports:
+  - port: 9000 
+    name: grpc
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: chat-svc
+
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: chat-svc-grpc-web-filter
+spec:
+  workloadLabels:
+    app: chat-svc
+  filters:
+  - listenerMatch:
+      listenerType: SIDECAR_INBOUND
+      listenerProtocol: HTTP
+    insertPosition:
+      index: FIRST
+    filterType: HTTP
+    filterName: "envoy.grpc_web"
+    filterConfig: {}
+
+---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: chat-svc
+  namespace: default
+  labels:
+    app: chat-svc
+spec:
+  gateways:
+  - chat-gateway
+  hosts:
+  - chat-svc
+  - chat.kurtspace.com
+  http:
+  - match:
+    - uri:
+        prefix: /v1.chat.ChatService
+    route:
+    - destination:
+        host: chat-svc
+        port:
+          number: 9000
+    corsPolicy:
+      allowOrigin: 
+      - '*'
+      allowCredentials:  true
+      allowHeaders:
+      - grpc-timeout
+      - content-type
+      - keep-alive
+      - user-agent
+      - cache-control
+      - content-type
+      - content-transfer-encoding
+      - custom-header-1
+      - x-accept-content-transfer-encoding
+      - x-accept-response-streaming
+      - x-user-agent
+      - x-grpc-web
+      allowMethods:
+      - POST
+      - GET
+      - OPTIONS
+      - PUT
+      - DELETE
+      exposeHeaders:
+      - custom-header-1
+      - grpc-status
+      - grpc-message
+      

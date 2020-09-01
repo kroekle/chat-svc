@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+option java_package = "com.kurtspace.cncf.chat";
+
+package v1.chat;
+
+service ChatService {
+	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty) {};
+	
+	rpc RegisterAndStream(Register) returns (stream ChatResults) {};
+	
+	rpc SendMessage(Message) returns (google.protobuf.Empty) {};
+	
+	rpc ChangeStatus(Person) returns (google.protobuf.Empty) {};
+	
+	rpc GetActivePeople(google.protobuf.Empty) returns (People) {};
+}
+
+enum Active {
+	OFF_LINE					= 0;
+	ACTIVE						= 1;
+	IGNORING_YOU				= 2;
+}
+
+message Person {
+	string name 				= 1;
+	Active active				= 2;
+}
+
+message People {
+	repeated Person person		= 1;
+}
+
+message Message {
+	Person sender				= 1;
+	string text					= 2;
+}
+
+message Register {
+	Person person				= 1;
+}
+
+message ChatResults {
+	oneof type {
+		Message text			= 1;
+		People	people			= 2;
+	}
+		
+}
+

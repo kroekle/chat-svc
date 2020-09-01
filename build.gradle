@@ -1,0 +1,78 @@
+/*
+ *
+ */
+
+plugins {
+    // Apply the java-library plugin to add support for Java Library
+    id 'java'
+    id 'com.google.protobuf' version '0.8.13'
+    id 'com.google.cloud.tools.jib' version '2.5.0'
+}
+
+repositories {
+    // Use jcenter for resolving dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+def artifactTag = '0.1.2'
+
+def grpcVersion = '1.31.1'
+def protobufVersion = '3.13.0'
+def protocVersion = protobufVersion
+
+
+dependencies {
+
+	// grpc dependencies
+    compile "io.grpc:grpc-protobuf:${grpcVersion}"
+    compile "io.grpc:grpc-stub:${grpcVersion}"
+    compile "io.grpc:grpc-services:${grpcVersion}"
+    compile "com.google.protobuf:protobuf-java-util:${protobufVersion}"
+    compile "io.grpc:grpc-netty-shaded:${grpcVersion}"
+    compileOnly "javax.annotation:javax.annotation-api:1.2"
+
+    // Use JUnit test framework
+    testImplementation 'junit:junit:4.12'
+}
+
+jib {
+	from {
+		image = 'gcr.io/distroless/java:11'
+	}
+	to {
+		image = "gcr.io/cloud-native-madison/chat-svc"
+		tags = [artifactTag, 'latest']
+	}
+	// using docker-credential-gcr for auth @see https://cloud.google.com/container-registry/docs/advanced-authentication#standalone-helper
+	container {
+		mainClass = 'com.kurtspace.cncf.app.ChatAppServer'
+		ports = ['9000']
+		jvmFlags = [
+			'-XX:+UseContainerSupport', 
+			'-XX:MinRAMPercentage=50', 
+			'-XX:MaxRAMPercentage=85',
+			]
+	}
+}
+
+protobuf {
+    protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
+    plugins {
+        grpc { artifact = "io.grpc:protoc-gen-grpc-java:${grpcVersion}" }
+    }
+    generateProtoTasks {
+        all().each { it.group = 'grpc' };
+        all()*.plugins { grpc {} };
+    }
+    generatedFilesBaseDir = "$projectDir/src/generated"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += ['src/generated/main/java', 'src/generated/main/grpc']
+        }
+    }
+}
+
